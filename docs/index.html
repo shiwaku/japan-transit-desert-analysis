@@ -61,7 +61,7 @@
 
     /* ── 凡例 ── */
     #legend {
-      position: absolute; bottom: 30px; left: 14px; z-index: 20;
+      position: absolute; bottom: 46px; left: 14px; z-index: 20;
       background: rgba(255,255,252,0.94);
       border: 1px solid rgba(0,0,0,0.08);
       border-radius: 10px; padding: 12px 16px;
@@ -197,6 +197,7 @@ const map = new maplibregl.Map({
 });
 
 map.addControl(new maplibregl.NavigationControl(), "top-left");
+map.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: "metric" }), "bottom-left");
 
 map.on("load", () => {
   document.getElementById("loading").style.display = "none";
