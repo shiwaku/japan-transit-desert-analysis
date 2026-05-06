@@ -53,9 +53,9 @@
       margin-top: 10px; padding: 10px 12px; border-radius: 8px;
       font-size: 0.8rem; display: none;
     }
-    #result-box.convenient  { background: rgba(89,203,143,0.15); border: 1px solid #59CB8F; }
-    #result-box.inconvenient{ background: rgba(255,200,0,0.15);  border: 1px solid #FFC800; }
-    #result-box.desert      { background: rgba(220,30,30,0.12);  border: 1px solid #DC1E1E; }
+    #result-box.convenient  { background: rgba(52,211,153,0.12); border: 1px solid #34d399; }
+    #result-box.inconvenient{ background: rgba(251,146,60,0.12); border: 1px solid #fb923c; }
+    #result-box.desert      { background: rgba(244,63,94,0.10);  border: 1px solid #f43f5e; }
     #result-box .cat-label  { font-size: 1rem; font-weight: 700; color: #1a1a1a; }
     #result-box .cat-detail { margin-top: 4px; color: #555; line-height: 1.5; }
 
@@ -167,9 +167,9 @@
 
 <div id="legend">
   <h3>公共交通アクセス区分</h3>
-  <div class="legend-item"><div class="legend-dot" style="background:#59CB8F"></div>便利地域（鉄道駅 1km以内）</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#FFC800"></div>不便地域（バス停 500m以内）</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#DC1E1E"></div>空白地域（車なしでは生活困難）</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#34d399"></div>便利地域（鉄道駅 1km以内）</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#fb923c"></div>不便地域（バス停 500m以内）</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f43f5e"></div>空白地域（車なしでは生活困難）</div>
 </div>
 
 <div id="stats">
@@ -209,9 +209,9 @@ map.on("load", () => {
 
   const catColor = [
     "match", ["get", "cat_code"],
-    0, "#59CB8F",
-    1, "#FFC800",
-    2, "#DC1E1E",
+    0, "#34d399",
+    1, "#fb923c",
+    2, "#f43f5e",
     "#888"
   ];
 
@@ -246,7 +246,7 @@ map.on("load", () => {
   // ── ホバーポップアップ ──
   const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: true, offset: 8 });
   const CAT_LABEL = { 0: "公共交通便利地域", 1: "公共交通不便地域", 2: "公共交通空白地域" };
-  const CAT_COLOR = { 0: "#59CB8F", 1: "#FFC800", 2: "#DC1E1E" };
+  const CAT_COLOR = { 0: "#34d399", 1: "#fb923c", 2: "#f43f5e" };
 
   function makePopupHTML(p) {
     const code   = p.cat_code;
@@ -279,9 +279,9 @@ map.on("load", () => {
 
 // ── 住所検索 ──
 const CAT_INFO = {
-  "0_公共交通便利地域":  { cls: "convenient",   label: "公共交通便利地域 🟢", desc: "鉄道駅まで徒歩1km圏内です。", color: "#59CB8F" },
-  "1_公共交通不便地域":  { cls: "inconvenient", label: "公共交通不便地域 🟡", desc: "鉄道駅は遠いが、バス停まで500m以内です。", color: "#FFC800" },
-  "2_公共交通空白地域":  { cls: "desert",       label: "公共交通空白地域 🔴", desc: "鉄道駅・バス停どちらも遠く、車がないと生活困難です。", color: "#DC1E1E" },
+  "0_公共交通便利地域":  { cls: "convenient",   label: "公共交通便利地域 🟢", desc: "鉄道駅まで徒歩1km圏内です。", color: "#34d399" },
+  "1_公共交通不便地域":  { cls: "inconvenient", label: "公共交通不便地域 🟠", desc: "鉄道駅は遠いが、バス停まで500m以内です。", color: "#fb923c" },
+  "2_公共交通空白地域":  { cls: "desert",       label: "公共交通空白地域 🔴", desc: "鉄道駅・バス停どちらも遠く、車がないと生活困難です。", color: "#f43f5e" },
 };
 
 let searchMarker = null;
