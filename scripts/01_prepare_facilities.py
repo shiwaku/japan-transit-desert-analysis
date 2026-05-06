@@ -29,6 +29,7 @@ S12 乗降客数列:
 from pathlib import Path
 import geopandas as gpd
 import pandas as pd
+from shapely.geometry import Point
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 
@@ -58,11 +59,26 @@ def load_stations_s12():
         if len(gdf) == 0:
             continue
 
-        # LineString → 重心でポイント化（投影座標系で計算後に戻す）
+        # LineString → 両端点をポイント化（北口・南口等の複数出口に対応）
+        # ホーム線形の start/end がプラットホームの両端に対応するため、
+        # 重心1点より実際の出口位置を正確に捕捉できる。
         gdf = gdf.copy()
         orig_crs = gdf.crs
-        gdf["geometry"] = gdf.to_crs("EPSG:6677").geometry.centroid
-        gdf = gdf.set_crs("EPSG:6677", allow_override=True).to_crs(orig_crs)
+        proj = gdf.to_crs("EPSG:6677")
+        rows = []
+        for _, row in proj.iterrows():
+            geom = row.geometry
+            if geom.geom_type == "LineString":
+                endpoints = [geom.coords[0], geom.coords[-1]]
+            elif geom.geom_type == "MultiLineString":
+                lines = list(geom.geoms)
+                endpoints = [lines[0].coords[0], lines[-1].coords[-1]]
+            else:
+                endpoints = [(geom.centroid.x, geom.centroid.y)]
+            base = row.drop("geometry").to_dict()
+            for pt in endpoints:
+                rows.append({**base, "geometry": Point(pt)})
+        gdf = gpd.GeoDataFrame(rows, crs="EPSG:6677").to_crs(orig_crs)
 
         # 乗降客数フィルタリング
         if S12_PASSENGER_COL in gdf.columns and MIN_PASSENGERS_PER_DAY > 0:
