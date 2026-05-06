@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>公共交通空白地域マップ — 全国250mメッシュ</title>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" />
   <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
@@ -11,7 +11,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", sans-serif; background: #f5f5f0; color: #1a1a1a; }
 
-    #map { width: 100vw; height: 100vh; }
+    #map { width: 100vw; height: 100dvh; }
 
     /* ── ヘッダー ── */
     #header {
@@ -103,23 +103,42 @@
 
     /* ── スマホ対応 ── */
     @media (max-width: 600px) {
-      #header { padding: 10px 12px 24px; }
+      /* ノッチ・ステータスバー対応 */
+      #header {
+        padding: max(10px, env(safe-area-inset-top)) 12px 24px;
+      }
       #header h1 { font-size: 1rem; }
 
       /* nav コントロールはデフォルト位置（ヘッダーは短い） */
       .maplibregl-ctrl-top-left { top: 10px !important; }
 
+      /* ホームインジケーター対応のボトムシート */
       #search-panel {
         top: auto; bottom: 0; right: 0; left: 0;
         width: 100%; border-radius: 14px 14px 0 0;
-        padding: 12px 14px 18px;
+        padding: 14px 16px max(20px, env(safe-area-inset-bottom));
         box-shadow: 0 -2px 16px rgba(0,0,0,0.12);
       }
-      #address-input { font-size: 1rem; padding: 10px 12px; }
-      #search-btn    { font-size: 1rem; padding: 10px 14px; min-width: 56px; }
+      /* iOS Safari: 16px未満だと入力時に自動ズームされるため16px固定 */
+      #address-input { font-size: 16px; padding: 11px 12px; }
+      #search-btn    { font-size: 16px; padding: 11px 16px; min-width: 60px; }
+
+      /* 結果が長くてもパネルが画面を覆いすぎないよう制限 */
+      #result-box { max-height: 110px; overflow-y: auto; }
 
       #legend { display: none; }
       #stats  { display: none; }
+    }
+
+    /* ── 横向き対応 ── */
+    @media (max-width: 900px) and (orientation: landscape) {
+      #header { display: none; }
+      .maplibregl-ctrl-top-left { top: 10px !important; }
+      #search-panel {
+        top: auto; bottom: 0; right: 0; left: 0;
+        width: 100%; border-radius: 10px 10px 0 0;
+        padding: 10px 16px max(8px, env(safe-area-inset-bottom));
+      }
     }
   </style>
 </head>
@@ -225,7 +244,7 @@ map.on("load", () => {
   });
 
   // ── ホバーポップアップ ──
-  const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 8 });
+  const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: true, offset: 8 });
   const CAT_LABEL = { 0: "公共交通便利地域", 1: "公共交通不便地域", 2: "公共交通空白地域" };
   const CAT_COLOR = { 0: "#59CB8F", 1: "#FFC800", 2: "#DC1E1E" };
 
