@@ -32,8 +32,8 @@ import pandas as pd
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 
-# 乗降客数フィルタリング閾値（1日あたり・上下計）
-MIN_PASSENGERS_PER_DAY = 100
+# 乗降客数フィルタリング閾値（1日あたり・上下計）。0 = フィルターなし（全駅使用）
+MIN_PASSENGERS_PER_DAY = 0
 
 # S12 列仕様: 4列セット×14年（2011-2024）。乗降客数は各セットの4列目
 # S12_009(2011), S12_013(2012), ..., S12_061(2024)
