@@ -1,0 +1,44 @@
+# 元データ（要ダウンロード）
+data/S12/
+data/N02/
+data/P11/
+data/N07/
+input/
+
+# 生成ファイル（大容量・再生成可）
+data/stations.parquet
+data/busstops.parquet
+data/city.parquet
+data/prefecture.parquet
+output/*.parquet
+output/*.geojson
+output/*.pmtiles
+
+# ログ
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Claude Code 内部ファイル
+CLAUDE.md
+
+# 追跡するもの（!で明示的に除外から解除）
+!output/.gitkeep
+!output/*.qml
+!output/make_pmtiles.sh
+!output/Map.qgz
+!output/stats/

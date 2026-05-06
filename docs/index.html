@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>公共交通空白地域マップ — 全国250mメッシュ</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" />
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script src="https://unpkg.com/pmtiles@3/dist/pmtiles.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", sans-serif; background: #f5f5f0; color: #1a1a1a; }
+
+    #map { width: 100vw; height: 100vh; }
+
+    /* ── ヘッダー ── */
+    #header {
+      position: absolute; top: 0; left: 0; right: 0; z-index: 10;
+      background: linear-gradient(to bottom, rgba(245,245,240,0.95), rgba(245,245,240,0));
+      padding: 14px 20px 32px;
+      pointer-events: none;
+    }
+    #header h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: 0.03em; color: #1a1a1a; }
+    #header p  { font-size: 0.78rem; color: #666; margin-top: 2px; }
+
+    /* ── 検索パネル ── */
+    #search-panel {
+      position: absolute; top: 14px; right: 14px; z-index: 20;
+      background: rgba(255,255,252,0.94);
+      border: 1px solid rgba(0,0,0,0.1);
+      border-radius: 10px;
+      padding: 12px 14px;
+      width: 280px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    }
+    #search-panel h2 { font-size: 0.82rem; font-weight: 600; margin-bottom: 8px; color: #333; }
+    #search-row { display: flex; gap: 6px; }
+    #address-input {
+      flex: 1; padding: 7px 10px; border-radius: 6px;
+      border: 1px solid rgba(0,0,0,0.18);
+      background: #fff; color: #1a1a1a;
+      font-size: 0.82rem; outline: none;
+    }
+    #address-input::placeholder { color: #aaa; }
+    #search-btn {
+      padding: 7px 12px; border-radius: 6px; border: none;
+      background: #3b82f6; color: white; font-size: 0.82rem;
+      cursor: pointer; font-weight: 600; white-space: nowrap;
+    }
+    #search-btn:hover { background: #2563eb; }
+    #result-box {
+      margin-top: 10px; padding: 10px 12px; border-radius: 8px;
+      font-size: 0.8rem; display: none;
+    }
+    #result-box.convenient  { background: rgba(89,203,143,0.15); border: 1px solid #59CB8F; }
+    #result-box.inconvenient{ background: rgba(255,200,0,0.15);  border: 1px solid #FFC800; }
+    #result-box.desert      { background: rgba(220,30,30,0.12);  border: 1px solid #DC1E1E; }
+    #result-box .cat-label  { font-size: 1rem; font-weight: 700; color: #1a1a1a; }
+    #result-box .cat-detail { margin-top: 4px; color: #555; line-height: 1.5; }
+
+    /* ── 凡例 ── */
+    #legend {
+      position: absolute; bottom: 30px; left: 14px; z-index: 20;
+      background: rgba(255,255,252,0.94);
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 10px; padding: 12px 16px;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    }
+    #legend h3 { font-size: 0.78rem; color: #666; margin-bottom: 8px; font-weight: 500; }
+    .legend-item { display: flex; align-items: center; gap: 8px; margin: 5px 0; font-size: 0.82rem; color: #333; }
+    .legend-dot { width: 14px; height: 14px; border-radius: 2px; flex-shrink: 0; }
+
+    /* ── 統計バッジ ── */
+    #stats {
+      position: absolute; bottom: 30px; right: 14px; z-index: 20;
+      background: rgba(255,255,252,0.94);
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 10px; padding: 12px 16px;
+      backdrop-filter: blur(6px); text-align: right;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    }
+    #stats h3 { font-size: 0.72rem; color: #888; margin-bottom: 6px; }
+    .stat-row  { font-size: 0.78rem; color: #333; margin: 3px 0; }
+    .stat-row span { font-weight: 700; }
+    .stat-desert { color: #c0392b; }
+
+    /* ── ローディング ── */
+    #loading {
+      position: absolute; inset: 0; z-index: 50;
+      background: #f5f5f0;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 12px;
+    }
+    #loading p { font-size: 0.9rem; color: #888; }
+    .spinner { width: 36px; height: 36px; border: 3px solid rgba(0,0,0,0.1);
+               border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── スマホ対応 ── */
+    @media (max-width: 600px) {
+      #header { padding: 10px 12px 24px; }
+      #header h1 { font-size: 1rem; }
+
+      #search-panel {
+        top: auto; bottom: 0; right: 0; left: 0;
+        width: 100%; border-radius: 14px 14px 0 0;
+        padding: 12px 14px 18px;
+        box-shadow: 0 -2px 16px rgba(0,0,0,0.12);
+      }
+      #address-input { font-size: 1rem; padding: 10px 12px; }
+      #search-btn    { font-size: 1rem; padding: 10px 14px; min-width: 56px; }
+
+      #legend {
+        bottom: auto; top: 60px; left: 8px;
+        padding: 8px 12px;
+      }
+      #legend h3 { display: none; }
+      .legend-item { font-size: 0.75rem; margin: 3px 0; }
+      .legend-dot  { width: 11px; height: 11px; }
+
+      #stats { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <p>地図を読み込んでいます…</p>
+</div>
+
+<div id="map"></div>
+
+<div id="header">
+  <h1>公共交通空白地域マップ</h1>
+  <p>全国250mメッシュ × 道路ネットワーク距離 | 令和2年国勢調査</p>
+</div>
+
+<div id="search-panel">
+  <h2>あなたの実家は？</h2>
+  <div id="search-row">
+    <input id="address-input" type="text" placeholder="住所・地名を入力（例：秋田市）" />
+    <button id="search-btn">検索</button>
+  </div>
+  <div id="result-box"></div>
+</div>
+
+<div id="legend">
+  <h3>公共交通アクセス区分</h3>
+  <div class="legend-item"><div class="legend-dot" style="background:#59CB8F"></div>便利地域（鉄道駅 1km以内）</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#FFC800"></div>不便地域（バス停 500m以内）</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#DC1E1E"></div>空白地域（車なしでは生活困難）</div>
+</div>
+
+<div id="stats">
+  <h3>全国集計（令和2年国勢調査）</h3>
+  <div class="stat-row">便利地域 <span>4,330万人</span>（34.4%）</div>
+  <div class="stat-row">不便地域 <span>6,161万人</span>（48.9%）</div>
+  <div class="stat-row stat-desert">空白地域 <span>2,103万人</span>（16.7%）</div>
+</div>
+
+<script>
+// ── PMTiles URL ──
+const PMTILES_URL = "https://pmtiles-data.s3.ap-northeast-1.amazonaws.com/mlit/ksj/transit_desert.pmtiles";
+
+// ── PMTiles プロトコル登録 ──
+const protocol = new pmtiles.Protocol();
+maplibregl.addProtocol("pmtiles", protocol.tile);
+
+const map = new maplibregl.Map({
+  container: "map",
+  style: "./pale.json",
+  center: [136.5, 36.5],
+  zoom: 5,
+  maxZoom: 16,
+});
+
+map.addControl(new maplibregl.NavigationControl(), "top-left");
+
+map.on("load", () => {
+  document.getElementById("loading").style.display = "none";
+
+  // ── PMTiles ソース ──
+  map.addSource("transit", {
+    type: "vector",
+    url: `pmtiles://${PMTILES_URL}`,
+  });
+
+  const catColor = [
+    "match", ["get", "cat_code"],
+    0, "#59CB8F",
+    1, "#FFC800",
+    2, "#DC1E1E",
+    "#888"
+  ];
+
+  map.addLayer({
+    id: "transit-fill",
+    type: "fill",
+    source: "transit",
+    "source-layer": "transit_desert",
+    paint: {
+      "fill-color": catColor,
+      "fill-opacity": [
+        "interpolate", ["linear"], ["zoom"],
+        5, 0.6,
+        9, 0.75,
+        12, 0.85
+      ]
+    }
+  });
+
+  map.addLayer({
+    id: "transit-outline",
+    type: "line",
+    source: "transit",
+    "source-layer": "transit_desert",
+    minzoom: 10,
+    paint: {
+      "line-color": "rgba(0,0,0,0.15)",
+      "line-width": 0.3
+    }
+  });
+
+  // ── ホバーポップアップ ──
+  const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 8 });
+  const CAT_LABEL = { 0: "公共交通便利地域", 1: "公共交通不便地域", 2: "公共交通空白地域" };
+  const CAT_COLOR = { 0: "#59CB8F", 1: "#FFC800", 2: "#DC1E1E" };
+
+  function makePopupHTML(p) {
+    const code   = p.cat_code;
+    const busMin = p.dist_bus_min >= 0 ? `${Number(p.dist_bus_min).toFixed(1)}分` : "—";
+    const stMin  = p.dist_station_min >= 0 ? `${Number(p.dist_station_min).toFixed(1)}分` : "—";
+    const pop    = p.pop_total ? `${Number(p.pop_total).toLocaleString()}人` : "0人";
+    return `<div style="font-size:0.82rem;line-height:1.6;min-width:180px">
+      <div style="font-weight:700;color:${CAT_COLOR[code]};margin-bottom:4px">${CAT_LABEL[code]}</div>
+      <div>最寄り鉄道駅：${stMin}</div>
+      <div>最寄りバス停：${busMin}</div>
+      <div>人口（250m四方）：${pop}</div>
+    </div>`;
+  }
+
+  // マウスホバー（PC）
+  map.on("mousemove", "transit-fill", (e) => {
+    map.getCanvas().style.cursor = "pointer";
+    popup.setLngLat(e.lngLat).setHTML(makePopupHTML(e.features[0].properties)).addTo(map);
+  });
+  map.on("mouseleave", "transit-fill", () => {
+    map.getCanvas().style.cursor = "";
+    popup.remove();
+  });
+
+  // タップ（スマホ）
+  map.on("click", "transit-fill", (e) => {
+    popup.setLngLat(e.lngLat).setHTML(makePopupHTML(e.features[0].properties)).addTo(map);
+  });
+});
+
+// ── 住所検索 ──
+const CAT_INFO = {
+  "0_公共交通便利地域":  { cls: "convenient",   label: "公共交通便利地域 🟢", desc: "鉄道駅まで徒歩1km圏内です。" },
+  "1_公共交通不便地域":  { cls: "inconvenient", label: "公共交通不便地域 🟡", desc: "鉄道駅は遠いが、バス停まで500m以内です。" },
+  "2_公共交通空白地域":  { cls: "desert",       label: "公共交通空白地域 🔴", desc: "鉄道駅・バス停どちらも遠く、車がないと生活困難です。" },
+};
+
+async function searchAddress() {
+  const q = document.getElementById("address-input").value.trim();
+  if (!q) return;
+  const btn = document.getElementById("search-btn");
+  btn.textContent = "…";
+  btn.disabled = true;
+
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q + " 日本")}&format=json&countrycodes=jp&limit=1`;
+    const res = await fetch(url, { headers: { "Accept-Language": "ja" } });
+    const data = await res.json();
+    if (!data.length) { showResult(null, "住所が見つかりませんでした"); return; }
+
+    const { lat, lon, display_name } = data[0];
+    const lngLat = [parseFloat(lon), parseFloat(lat)];
+    map.flyTo({ center: lngLat, zoom: 13, duration: 1200 });
+
+    // ポイントのフィーチャを取得（flyTo完了後）
+    setTimeout(() => {
+      const pt = map.project(lngLat);
+      const features = map.queryRenderedFeatures(pt, { layers: ["transit-fill"] });
+      if (features.length) {
+        const cat = features[0].properties.category;
+        const info = CAT_INFO[cat];
+        const busMin = features[0].properties.dist_bus_min;
+        const stMin  = features[0].properties.dist_station_min;
+        const detail = `${info.desc}<br>鉄道駅まで ${stMin >= 0 ? stMin.toFixed(1)+"分" : "—"}、バス停まで ${busMin >= 0 ? busMin.toFixed(1)+"分" : "—"}`;
+        showResult(info, detail);
+      } else {
+        showResult(null, `<b>${display_name.split(",")[0]}</b> 周辺にデータがありません（海上・国外の可能性）`);
+      }
+    }, 1400);
+  } catch (e) {
+    showResult(null, "検索エラーが発生しました");
+  } finally {
+    btn.textContent = "検索";
+    btn.disabled = false;
+  }
+}
+
+function showResult(info, detail) {
+  const box = document.getElementById("result-box");
+  box.style.display = "block";
+  box.className = info ? info.cls : "";
+  box.innerHTML = info
+    ? `<div class="cat-label">${info.label}</div><div class="cat-detail">${detail}</div>`
+    : `<div class="cat-detail">${detail}</div>`;
+}
+
+document.getElementById("search-btn").addEventListener("click", searchAddress);
+document.getElementById("address-input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") searchAddress();
+});
+</script>
+</body>
+</html>
