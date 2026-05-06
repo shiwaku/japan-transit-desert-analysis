@@ -284,8 +284,10 @@ map.on("load", () => {
     }
   });
 
-  // ── ホバーポップアップ ──
+  // ── ポップアップ（ホバー＋クリック/タップ） ──
   const popup = new maplibregl.Popup({ closeButton: true, closeOnClick: true, offset: 8 });
+  let pinned = false;
+  popup.on("close", () => { pinned = false; });
   const CAT_LABEL = { 0: "公共交通便利地域", 1: "公共交通不便地域", 2: "公共交通空白地域" };
   const CAT_COLOR = { 0: "#34d399", 1: "#fb923c", 2: "#f43f5e" };
 
@@ -302,18 +304,20 @@ map.on("load", () => {
     </div>`;
   }
 
-  // マウスホバー（PC）
+  // マウスホバー（PC）: pinned中は更新しない
   map.on("mousemove", "transit-fill", (e) => {
     map.getCanvas().style.cursor = "pointer";
-    popup.setLngLat(e.lngLat).setHTML(makePopupHTML(e.features[0].properties)).addTo(map);
+    if (!pinned) popup.setLngLat(e.lngLat).setHTML(makePopupHTML(e.features[0].properties)).addTo(map);
   });
   map.on("mouseleave", "transit-fill", () => {
     map.getCanvas().style.cursor = "";
-    popup.remove();
+    if (!pinned) popup.remove();
   });
 
-  // タップ（スマホ）
+  // クリック/タップ（PC・スマホ共通）: stopPropagation で closeOnClick の即時消去を防ぐ
   map.on("click", "transit-fill", (e) => {
+    e.originalEvent.stopPropagation();
+    pinned = true;
     popup.setLngLat(e.lngLat).setHTML(makePopupHTML(e.features[0].properties)).addTo(map);
   });
 });
