@@ -285,7 +285,8 @@ map.on("load", () => {
   });
 
   // ── ポップアップ（ホバー＋クリック/タップ） ──
-  const popup = new maplibregl.Popup({ closeButton: true, closeOnClick: true, offset: 8 });
+  // closeOnClick: false にして手動管理。closeOnClick:true はMapLibre内部clickで即消えるため使わない
+  const popup = new maplibregl.Popup({ closeButton: true, closeOnClick: false, offset: 8 });
   let pinned = false;
   popup.on("close", () => { pinned = false; });
   const CAT_LABEL = { 0: "公共交通便利地域", 1: "公共交通不便地域", 2: "公共交通空白地域" };
@@ -304,7 +305,14 @@ map.on("load", () => {
     </div>`;
   }
 
-  // マウスホバー（PC）: pinned中は更新しない
+  // マップ上の空白タップ/クリックでポップアップを閉じる
+  map.on("click", (e) => {
+    if (!map.queryRenderedFeatures(e.point, { layers: ["transit-fill"] }).length) {
+      popup.remove();
+    }
+  });
+
+  // PC: マウスホバー（pinned中は更新しない）
   map.on("mousemove", "transit-fill", (e) => {
     map.getCanvas().style.cursor = "pointer";
     if (!pinned) popup.setLngLat(e.lngLat).setHTML(makePopupHTML(e.features[0].properties)).addTo(map);
@@ -314,9 +322,8 @@ map.on("load", () => {
     if (!pinned) popup.remove();
   });
 
-  // クリック/タップ（PC・スマホ共通）: stopPropagation で closeOnClick の即時消去を防ぐ
+  // クリック/タップ（PC・スマホ共通）
   map.on("click", "transit-fill", (e) => {
-    e.originalEvent.stopPropagation();
     pinned = true;
     popup.setLngLat(e.lngLat).setHTML(makePopupHTML(e.features[0].properties)).addTo(map);
   });
