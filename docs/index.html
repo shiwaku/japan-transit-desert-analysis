@@ -144,7 +144,7 @@
 
 <div id="header">
   <h1>公共交通空白地域マップ</h1>
-  <p>全国250mメッシュ × 道路ネットワーク距離 | 令和2年国勢調査</p>
+  <p>全国250mメッシュ × 道路距離 | 令和2年国勢調査</p>
 </div>
 
 <div id="search-panel">
@@ -269,10 +269,12 @@ map.on("load", () => {
 
 // ── 住所検索 ──
 const CAT_INFO = {
-  "0_公共交通便利地域":  { cls: "convenient",   label: "公共交通便利地域 🟢", desc: "鉄道駅まで徒歩1km圏内です。" },
-  "1_公共交通不便地域":  { cls: "inconvenient", label: "公共交通不便地域 🟡", desc: "鉄道駅は遠いが、バス停まで500m以内です。" },
-  "2_公共交通空白地域":  { cls: "desert",       label: "公共交通空白地域 🔴", desc: "鉄道駅・バス停どちらも遠く、車がないと生活困難です。" },
+  "0_公共交通便利地域":  { cls: "convenient",   label: "公共交通便利地域 🟢", desc: "鉄道駅まで徒歩1km圏内です。", color: "#59CB8F" },
+  "1_公共交通不便地域":  { cls: "inconvenient", label: "公共交通不便地域 🟡", desc: "鉄道駅は遠いが、バス停まで500m以内です。", color: "#FFC800" },
+  "2_公共交通空白地域":  { cls: "desert",       label: "公共交通空白地域 🔴", desc: "鉄道駅・バス停どちらも遠く、車がないと生活困難です。", color: "#DC1E1E" },
 };
+
+let searchMarker = null;
 
 async function searchAddress() {
   const q = document.getElementById("address-input").value.trim();
@@ -289,6 +291,13 @@ async function searchAddress() {
 
     const { lat, lon, display_name } = data[0];
     const lngLat = [parseFloat(lon), parseFloat(lat)];
+
+    // 既存マーカーを削除してピンを立てる（flyTo前に配置）
+    if (searchMarker) searchMarker.remove();
+    searchMarker = new maplibregl.Marker({ color: "#3b82f6" })
+      .setLngLat(lngLat)
+      .addTo(map);
+
     map.flyTo({ center: lngLat, zoom: 13, duration: 1200 });
 
     // ポイントのフィーチャを取得（flyTo完了後）
@@ -302,6 +311,11 @@ async function searchAddress() {
         const stMin  = features[0].properties.dist_station_min;
         const detail = `${info.desc}<br>鉄道駅まで ${stMin >= 0 ? stMin.toFixed(1)+"分" : "—"}、バス停まで ${busMin >= 0 ? busMin.toFixed(1)+"分" : "—"}`;
         showResult(info, detail);
+        // カテゴリ色に合わせてマーカーを更新
+        searchMarker.remove();
+        searchMarker = new maplibregl.Marker({ color: info.color })
+          .setLngLat(lngLat)
+          .addTo(map);
       } else {
         showResult(null, `<b>${display_name.split(",")[0]}</b> 周辺にデータがありません（海上・国外の可能性）`);
       }
