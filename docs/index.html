@@ -139,23 +139,28 @@
 
       /* 凡例: デフォルト非表示、open クラスで表示 */
       #legend {
-        display: none; top: 110px; right: 14px; left: auto; padding: 10px 14px;
+        display: none;
+        top: max(54px, calc(env(safe-area-inset-top) + 44px));
+        right: 14px; left: auto; bottom: auto; padding: 10px 14px;
       }
       #legend.open { display: block; }
       #legend-close { display: block; }
       .legend-item { font-size: 0.78rem; margin: 4px 0; }
       .legend-dot  { width: 11px; height: 11px; }
 
-      /* 凡例トグルボタン */
+      /* 凡例トグルボタン：ヘッダー右端に配置 */
       #legend-toggle {
         display: flex; align-items: center; gap: 6px;
-        position: absolute; top: 66px; right: 14px; z-index: 20;
+        position: absolute;
+        top: max(12px, env(safe-area-inset-top));
+        right: 14px; z-index: 20;
         background: rgba(255,255,252,0.94);
         border: 1px solid rgba(0,0,0,0.1);
-        border-radius: 8px; padding: 8px 14px;
+        border-radius: 8px; padding: 6px 12px;
         font-size: 0.82rem; font-weight: 600; color: #333;
         cursor: pointer; backdrop-filter: blur(6px);
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        line-height: 1.4;
       }
 
       #stats { display: none; }
@@ -280,7 +285,7 @@ map.on("load", () => {
   });
 
   // ── ホバーポップアップ ──
-  const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: true, offset: 8 });
+  const popup = new maplibregl.Popup({ closeButton: true, closeOnClick: true, offset: 8 });
   const CAT_LABEL = { 0: "公共交通便利地域", 1: "公共交通不便地域", 2: "公共交通空白地域" };
   const CAT_COLOR = { 0: "#34d399", 1: "#fb923c", 2: "#f43f5e" };
 
