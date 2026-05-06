@@ -284,13 +284,15 @@ async function searchAddress() {
   btn.disabled = true;
 
   try {
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q + " 日本")}&format=json&countrycodes=jp&limit=1`;
-    const res = await fetch(url, { headers: { "Accept-Language": "ja" } });
+    // 国土地理院 地名検索API
+    const url = `https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(q)}`;
+    const res = await fetch(url);
     const data = await res.json();
     if (!data.length) { showResult(null, "住所が見つかりませんでした"); return; }
 
-    const { lat, lon, display_name } = data[0];
-    const lngLat = [parseFloat(lon), parseFloat(lat)];
+    const [lon, lat] = data[0].geometry.coordinates;
+    const display_name = data[0].properties.title;
+    const lngLat = [lon, lat];
 
     // 既存マーカーを削除してピンを立てる（flyTo前に配置）
     if (searchMarker) searchMarker.remove();
