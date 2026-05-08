@@ -25,7 +25,7 @@
 
 ## ウェブビューワー
 
-`viewer/index.html` — MapLibre GL JS + PMTiles による全国インタラクティブマップ。GitHub Pages で公開中。
+`docs/index.html` — MapLibre GL JS + PMTiles による全国インタラクティブマップ。GitHub Pages で公開中。
 
 - 住所検索で「あなたの自宅」の交通区分を判定
 - ホバー/タップで最寄り駅・バス停までの徒歩時間と人口を表示
