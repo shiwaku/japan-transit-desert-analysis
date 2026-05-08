@@ -33,8 +33,6 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Claude Code 内部ファイル
-CLAUDE.md
 
 # 追跡するもの（!で明示的に除外から解除）
 !output/.gitkeep
