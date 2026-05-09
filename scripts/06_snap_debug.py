@@ -25,13 +25,16 @@ from pathlib import Path
 import numpy as np
 import geopandas as gpd
 from scipy.spatial import KDTree
+from scipy.sparse import csr_matrix
+from scipy.sparse.csgraph import connected_components as sp_cc
 from shapely.geometry import LineString
 import pyproj
 
 ROOT = Path(__file__).parent.parent
-DATA_DIR  = ROOT / "data"
-OUT_DIR   = ROOT / "output"
+DATA_DIR   = ROOT / "data"
+OUT_DIR    = ROOT / "output"
 NODES_PATH = ROOT.parent / "01_MakeNetwork" / "nationwide_walk" / "KSJ_N13-24_nationwide_walk_道路ノード.parquet"
+LINKS_PATH = ROOT.parent / "01_MakeNetwork" / "nationwide_walk" / "KSJ_N13-24_nationwide_walk_道路リンク.parquet"
 
 STATION_QUAD_MAX_DIST_M = 500  # 02_calc_transit_desert.py のデフォルトと合わせる
 
@@ -137,10 +140,37 @@ def main():
                         help="駅名の部分一致フィルタ（例: 北松戸）。空の場合は全駅")
     args = parser.parse_args()
 
-    print("ノード読み込み...")
+    print("ノード・リンク読み込み...")
     nodes = gpd.read_parquet(NODES_PATH)
-    node_coords = np.array([[p.y, p.x] for p in nodes.geometry])
     print(f"  ノード数: {len(nodes):,}")
+
+    # 最大連結成分のノードのみをスナップ対象とする（孤立ノード除外）
+    if LINKS_PATH.exists():
+        links = gpd.read_parquet(LINKS_PATH)
+        n1 = links["node1"].astype(int).to_numpy()
+        n2 = links["node2"].astype(int).to_numpy()
+        all_nids = list(set(n1.tolist() + n2.tolist()))
+        n2i_cc = {nid: i for i, nid in enumerate(all_nids)}
+        n_total = len(all_nids)
+        rows_idx = np.array([n2i_cc[v] for v in n1], dtype=np.int32)
+        cols_idx = np.array([n2i_cc[v] for v in n2], dtype=np.int32)
+        g_cc = csr_matrix(
+            (np.ones(len(rows_idx), dtype=np.int8), (rows_idx, cols_idx)),
+            shape=(n_total, n_total)
+        )
+        n_comp, labels_cc = sp_cc(g_cc, directed=False)
+        comp_sizes_cc = np.bincount(labels_cc)
+        large_comps_cc = set(int(i) for i in np.where(comp_sizes_cc >= 1000)[0])
+        connected_ids = {nid for nid, i in n2i_cc.items() if labels_cc[i] in large_comps_cc}
+        n_isolated = n_total - len(connected_ids)
+        print(f"  連結成分数: {n_comp:,}  有効成分数: {len(large_comps_cc):,}  有効ノード: {len(connected_ids):,}  "
+              f"孤立ノード除外: {n_isolated:,}件")
+        nodes = nodes[nodes["node_id"].astype(int).isin(connected_ids)].reset_index(drop=True)
+        print(f"  フィルタ後ノード数: {len(nodes):,}")
+    else:
+        print(f"  警告: {LINKS_PATH.name} が見つかりません。孤立ノード除外をスキップ")
+
+    node_coords = np.array([[p.y, p.x] for p in nodes.geometry])
 
     print("駅データ読み込み...")
     stations = gpd.read_parquet(DATA_DIR / "stations.parquet")
