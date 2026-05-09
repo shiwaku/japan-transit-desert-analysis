@@ -92,10 +92,27 @@
       backdrop-filter: blur(6px); text-align: right;
       box-shadow: 0 2px 12px rgba(0,0,0,0.1);
     }
-    #stats h3 { font-size: 0.72rem; color: #888; margin-bottom: 6px; }
+    #stats-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    #stats h3 { font-size: 0.72rem; color: #888; }
+    #assumptions-toggle {
+      background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.2); border-radius: 4px;
+      padding: 2px 7px; font-size: 0.68rem; cursor: pointer;
+      color: #555; flex-shrink: 0; margin-left: 8px; white-space: nowrap;
+    }
+    #assumptions-toggle:hover { background: rgba(0,0,0,0.1); color: #222; }
+    #assumptions-toggle.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
     .stat-row  { font-size: 0.78rem; color: #333; margin: 3px 0; }
     .stat-row span { font-weight: 700; }
     .stat-desert { color: #c0392b; }
+    #assumptions {
+      display: none; margin-top: 10px; padding-top: 10px;
+      border-top: 1px solid rgba(0,0,0,0.08);
+      text-align: left;
+    }
+    #assumptions dl { font-size: 0.72rem; line-height: 1.5; }
+    #assumptions dt { font-weight: 600; color: #555; margin-top: 6px; }
+    #assumptions dt:first-child { margin-top: 0; }
+    #assumptions dd { color: #777; margin: 0 0 0 0; }
 
     /* ── ローディング ── */
     #loading {
@@ -214,10 +231,25 @@
 <button id="legend-toggle">凡例</button>
 
 <div id="stats">
-  <h3>全国集計（令和2年国勢調査）</h3>
+  <div id="stats-header">
+    <h3>全国集計（令和2年国勢調査）</h3>
+    <button id="assumptions-toggle">前提条件</button>
+  </div>
   <div class="stat-row">便利地域 <span>5,695万人</span>（45.2%）</div>
   <div class="stat-row">不便地域 <span>5,112万人</span>（40.6%）</div>
   <div class="stat-row stat-desert">空白地域 <span>1,788万人</span>（14.2%）</div>
+  <div id="assumptions">
+    <dl>
+      <dt>距離計算</dt>
+      <dd>道路ネットワーク上の徒歩距離（3.6 km/h・Dijkstra）<br>直線距離ではない</dd>
+      <dt>判定閾値</dt>
+      <dd>鉄道駅 ≤ 1 km（16.7分）→ 便利<br>バス停 ≤ 500 m（8.3分）→ 不便<br>どちらも超える → 空白</dd>
+      <dt>データ出典</dt>
+      <dd>鉄道駅: 国土数値情報 駅別乗降客数（S12）2024年<br>バス停: 国土数値情報 バス停留所（P11）2022年<br>道路: 国土数値情報 道路データ（N13）2024年度<br>人口: 令和2年国勢調査 250mメッシュ（総務省統計局）</dd>
+      <dt>バス停</dt>
+      <dd>路線バスのみ<br>デマンドバス・高速バスは含まない</dd>
+    </dl>
+  </div>
 </div>
 
 <script>
@@ -405,6 +437,15 @@ function showResult(info, detail) {
 document.getElementById("search-btn").addEventListener("click", searchAddress);
 document.getElementById("address-input").addEventListener("keydown", (e) => {
   if (e.key === "Enter") searchAddress();
+});
+
+// ── 前提条件トグル ──
+document.getElementById("assumptions-toggle").addEventListener("click", () => {
+  const panel = document.getElementById("assumptions");
+  const btn   = document.getElementById("assumptions-toggle");
+  const isOpen = panel.style.display === "block";
+  panel.style.display = isOpen ? "none" : "block";
+  btn.classList.toggle("active", !isOpen);
 });
 
 // ── 凡例トグル（スマホ） ──
