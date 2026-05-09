@@ -39,6 +39,7 @@ import pandas as pd
 from scipy.sparse import csr_matrix, coo_matrix
 from scipy.sparse import vstack as sp_vstack
 from scipy.sparse.csgraph import dijkstra as sp_dijkstra
+from scipy.sparse.csgraph import connected_components as sp_cc
 from scipy.spatial import KDTree
 from shapely.geometry import box as sbox
 
@@ -205,12 +206,24 @@ def main(station_max_dist_m: float = STATION_QUAD_MAX_DIST_M):
     unique_nodes, n2i, G = build_graph(links)
     print(f"  グラフ: ノード {G.shape[0]:,} / エッジ {G.nnz:,}  ({time.time()-t0:.1f}s)")
 
-    node_coords = np.array([[p.y, p.x] for p in nodes.geometry])
+    # 最大連結成分のノードのみをスナップ対象とする（孤立ノード除外）
+    print("連結成分解析...")
+    n_comp, comp_labels = sp_cc(G, directed=False)
+    comp_sizes = np.bincount(comp_labels)
+    large_comps = set(int(i) for i in np.where(comp_sizes >= 1000)[0])
+    connected_node_ids = set(unique_nodes[np.isin(comp_labels, list(large_comps))].tolist())
+    n_isolated = len(unique_nodes) - len(connected_node_ids)
+    print(f"  連結成分数: {n_comp:,}  有効成分数: {len(large_comps):,}  有効ノード: {len(connected_node_ids):,}  "
+          f"孤立ノード除外: {n_isolated:,}件  ({time.time()-t0:.1f}s)")
+
+    # 駅・バス停スナップ用ノードを最大連結成分に限定
+    nodes_conn = nodes[nodes["node_id"].astype(int).isin(connected_node_ids)].reset_index(drop=True)
+    node_coords_conn = np.array([[p.y, p.x] for p in nodes_conn.geometry])
 
     # ── ① 駅 Multi-source Dijkstra ──
     print("駅 → 全ノード Dijkstra（Multi-source）...")
     st_coords  = np.array([[p.y, p.x] for p in stations.geometry])
-    st_idxs    = snap_to_nodes_quadrant(st_coords, node_coords, nodes, n2i,
+    st_idxs    = snap_to_nodes_quadrant(st_coords, node_coords_conn, nodes_conn, n2i,
                                          max_dist_m=station_max_dist_m)
     print(f"  スナップ駅ノード数: {len(st_idxs):,}")
     dist_station_node = multisource_dijkstra(G, st_idxs)
@@ -219,7 +232,7 @@ def main(station_max_dist_m: float = STATION_QUAD_MAX_DIST_M):
     # ── ② バス停 Multi-source Dijkstra ──
     print("バス停 → 全ノード Dijkstra（Multi-source）...")
     bs_coords  = np.array([[p.y, p.x] for p in busstops.geometry])
-    bs_idxs    = snap_to_nodes(bs_coords, node_coords, nodes, n2i)  # 最近傍1ノード
+    bs_idxs    = snap_to_nodes(bs_coords, node_coords_conn, nodes_conn, n2i)  # 最近傍1ノード
     print(f"  スナップバス停数: {len(bs_idxs):,}")
     dist_bus_node = multisource_dijkstra(G, bs_idxs)
     print(f"  完了  ({time.time()-t0:.1f}s)")
