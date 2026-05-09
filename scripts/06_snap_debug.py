@@ -1,18 +1,31 @@
 """
 駅・バス停のスナップ先道路ノードを可視化するデバッグスクリプト。
 
+02_calc_transit_desert.py と同じ象限スナップ（NE/NW/SE/SW）を再現する。
+
 出力:
-  output/stations_snap.parquet      駅 + スナップ先ノード座標・距離
-  output/busstops_snap.parquet      バス停 + スナップ先ノード座標・距離
+  output/stations_snap.parquet        駅 + スナップ先ノード（1駅あたり最大4象限×2端点=8ノード）
+  output/busstops_snap.parquet        バス停 + スナップ先ノード
   output/stations_snap_lines.parquet  駅 → スナップ先ノードの接続線
   output/busstops_snap_lines.parquet  バス停 → スナップ先ノードの接続線
+
+使用例:
+  # 全駅（デフォルト 500m）
+  python3 scripts/06_snap_debug.py
+
+  # 特定駅を絞り込み
+  python3 scripts/06_snap_debug.py --filter 北松戸
+
+  # 最大距離を変更
+  python3 scripts/06_snap_debug.py --station-max-dist 300 --filter 北松戸
 """
 
+import argparse
 from pathlib import Path
 import numpy as np
 import geopandas as gpd
 from scipy.spatial import KDTree
-from shapely.geometry import LineString, Point
+from shapely.geometry import LineString
 import pyproj
 
 ROOT = Path(__file__).parent.parent
@@ -20,56 +33,110 @@ DATA_DIR  = ROOT / "data"
 OUT_DIR   = ROOT / "output"
 NODES_PATH = ROOT.parent / "01_MakeNetwork" / "nationwide_walk" / "KSJ_N13-24_nationwide_walk_道路ノード.parquet"
 
-# 緯度経度→メートル距離変換用
+STATION_QUAD_MAX_DIST_M = 500  # 02_calc_transit_desert.py のデフォルトと合わせる
+
 geod = pyproj.Geod(ellps="WGS84")
+QUAD_NAMES = ["NE", "NW", "SE", "SW"]
+
 
 def snap_distance_m(lon1, lat1, lon2, lat2):
-    """2点間の測地線距離（m）"""
     _, _, dist = geod.inv(lon1, lat1, lon2, lat2)
     return dist
 
+def _m_to_deg(meters):
+    return meters / 111_000
 
-def make_snap_output(facilities: gpd.GeoDataFrame, nodes: gpd.GeoDataFrame,
-                     node_coords: np.ndarray, name_col: str) -> tuple:
+
+def make_snap_quadrant(facilities: gpd.GeoDataFrame, nodes: gpd.GeoDataFrame,
+                       node_coords: np.ndarray, name_col: str,
+                       max_dist_m: float) -> tuple:
     """
-    施設をノードにスナップし、点 GDF と接続線 GDF を返す。
+    NE/NW/SE/SW 各象限の最近傍ノードをスナップ（02_calc_transit_desert.py と同実装）。
     """
+    max_dist_deg = _m_to_deg(max_dist_m)
+    tree = KDTree(node_coords)
+    fac_reset = facilities.reset_index(drop=True)
+    rows_point = []
+    rows_line  = []
+
+    for _, row in fac_reset.iterrows():
+        fac_pt = row.geometry
+        coord  = np.array([fac_pt.y, fac_pt.x])
+        candidates = tree.query_ball_point(coord, r=max_dist_deg)
+        if not candidates:
+            _, nearest = tree.query([coord])
+            candidates = [int(nearest[0])]
+
+        quads: list[list[int]] = [[], [], [], []]
+        for ci in candidates:
+            nd_lat, nd_lon = node_coords[ci]
+            r = 0 if nd_lat >= coord[0] else 2
+            c = 0 if nd_lon >= coord[1] else 1
+            quads[r + c].append(ci)
+
+        for qi, q in enumerate(quads):
+            if not q:
+                continue
+            q_arr = np.array(q)
+            diffs = node_coords[q_arr] - coord
+            nearest_in_q = q_arr[int(np.argmin((diffs ** 2).sum(axis=1)))]
+            nd = nodes.iloc[nearest_in_q]
+            dist = snap_distance_m(fac_pt.x, fac_pt.y,
+                                   nd.geometry.x, nd.geometry.y)
+            base = {c: row[c] for c in fac_reset.columns if c != "geometry"}
+            rows_point.append({**base,
+                "quadrant":     QUAD_NAMES[qi],
+                "snap_node_id": nd["node_id"],
+                "snap_dist_m":  round(dist, 1),
+                "geometry":     nd.geometry})
+            rows_line.append({
+                name_col if name_col in fac_reset.columns else "name":
+                    row[name_col] if name_col in fac_reset.columns else "",
+                "quadrant":     QUAD_NAMES[qi],
+                "snap_node_id": nd["node_id"],
+                "snap_dist_m":  round(dist, 1),
+                "geometry":     LineString([fac_pt, nd.geometry])})
+
+    return (gpd.GeoDataFrame(rows_point, crs="EPSG:4326"),
+            gpd.GeoDataFrame(rows_line,  crs="EPSG:4326"))
+
+
+def make_snap_nearest(facilities: gpd.GeoDataFrame, nodes: gpd.GeoDataFrame,
+                      node_coords: np.ndarray, name_col: str) -> tuple:
+    """最近傍1ノードスナップ（バス停用）。"""
     coords = np.array([[p.y, p.x] for p in facilities.geometry])
     _, snap_idx = KDTree(node_coords).query(coords)
-    snapped_nodes = nodes.iloc[snap_idx].reset_index(drop=True)
-
-    # スナップ距離（m）
-    snap_dist = np.array([
-        snap_distance_m(
-            facilities.geometry.iloc[i].x, facilities.geometry.iloc[i].y,
-            snapped_nodes.geometry.iloc[i].x, snapped_nodes.geometry.iloc[i].y
-        )
-        for i in range(len(facilities))
-    ])
-
-    # 点出力（スナップ先ノード位置に駅・バス停情報を付与）
     fac_reset = facilities.reset_index(drop=True)
-    point_gdf = fac_reset.copy()
-    point_gdf["snap_node_id"] = snapped_nodes["node_id"].values
-    point_gdf["snap_lon"]     = [g.x for g in snapped_nodes.geometry]
-    point_gdf["snap_lat"]     = [g.y for g in snapped_nodes.geometry]
-    point_gdf["snap_dist_m"]  = np.round(snap_dist, 1)
-    point_gdf["snap_geom"]    = snapped_nodes.geometry.values
-
-    # 接続線出力
-    lines = [
-        LineString([fac_reset.geometry.iloc[i], snapped_nodes.geometry.iloc[i]])
-        for i in range(len(fac_reset))
-    ]
-    line_gdf = fac_reset[[name_col]].copy() if name_col in fac_reset.columns else fac_reset.iloc[:, :1].copy()
-    line_gdf["snap_node_id"] = snapped_nodes["node_id"].values
-    line_gdf["snap_dist_m"]  = np.round(snap_dist, 1)
-    line_gdf = gpd.GeoDataFrame(line_gdf, geometry=lines, crs="EPSG:4326")
-
-    return point_gdf, line_gdf
+    snapped   = nodes.iloc[snap_idx].reset_index(drop=True)
+    rows_point, rows_line = [], []
+    for i, row in fac_reset.iterrows():
+        nd   = snapped.iloc[i]
+        dist = snap_distance_m(row.geometry.x, row.geometry.y,
+                               nd.geometry.x, nd.geometry.y)
+        base = {c: row[c] for c in fac_reset.columns if c != "geometry"}
+        rows_point.append({**base,
+            "snap_node_id": nd["node_id"],
+            "snap_dist_m":  round(dist, 1),
+            "geometry":     nd.geometry})
+        rows_line.append({
+            name_col if name_col in fac_reset.columns else "name":
+                row[name_col] if name_col in fac_reset.columns else "",
+            "snap_node_id": nd["node_id"],
+            "snap_dist_m":  round(dist, 1),
+            "geometry":     LineString([row.geometry, nd.geometry])})
+    return (gpd.GeoDataFrame(rows_point, crs="EPSG:4326"),
+            gpd.GeoDataFrame(rows_line,  crs="EPSG:4326"))
 
 
 def main():
+    parser = argparse.ArgumentParser(description="駅・バス停スナップデバッグ")
+    parser.add_argument("--station-max-dist", type=float, default=STATION_QUAD_MAX_DIST_M,
+                        metavar="METERS",
+                        help=f"駅象限スナップの最大距離（m）（デフォルト: {STATION_QUAD_MAX_DIST_M}m）")
+    parser.add_argument("--filter", type=str, default="", metavar="NAME",
+                        help="駅名の部分一致フィルタ（例: 北松戸）。空の場合は全駅")
+    args = parser.parse_args()
+
     print("ノード読み込み...")
     nodes = gpd.read_parquet(NODES_PATH)
     node_coords = np.array([[p.y, p.x] for p in nodes.geometry])
@@ -77,39 +144,47 @@ def main():
 
     print("駅データ読み込み...")
     stations = gpd.read_parquet(DATA_DIR / "stations.parquet")
-    print(f"  駅数: {len(stations):,}")
+    if args.filter:
+        stations = stations[stations["station_name"].str.contains(args.filter, na=False)]
+        print(f"  フィルタ '{args.filter}': {len(stations):,} 件")
+    else:
+        print(f"  駅数: {len(stations):,}")
 
     print("バス停データ読み込み...")
     busstops = gpd.read_parquet(DATA_DIR / "busstops.parquet")
     print(f"  バス停数: {len(busstops):,}")
 
-    print("駅スナップ処理...")
-    st_point, st_lines = make_snap_output(stations, nodes, node_coords, "station_name")
+    print(f"駅スナップ処理（NE/NW/SE/SW 4象限・最大 {args.station_max_dist:.0f}m）...")
+    st_point, st_lines = make_snap_quadrant(
+        stations, nodes, node_coords, "station_name", max_dist_m=args.station_max_dist)
     st_point.to_parquet(OUT_DIR / "stations_snap.parquet")
     st_lines.to_parquet(OUT_DIR / "stations_snap_lines.parquet")
+    print(f"  スナップリンク数: {len(st_lines):,}")
     print(f"  スナップ距離: 平均 {st_point['snap_dist_m'].mean():.1f}m  "
           f"最大 {st_point['snap_dist_m'].max():.1f}m  "
           f"中央値 {st_point['snap_dist_m'].median():.1f}m")
 
-    print("バス停スナップ処理...")
-    bs_point, bs_lines = make_snap_output(busstops, nodes, node_coords, "stop_name")
+    print("バス停スナップ処理（最近傍1ノード）...")
+    bs_point, bs_lines = make_snap_nearest(busstops, nodes, node_coords, "stop_name")
     bs_point.to_parquet(OUT_DIR / "busstops_snap.parquet")
     bs_lines.to_parquet(OUT_DIR / "busstops_snap_lines.parquet")
     print(f"  スナップ距離: 平均 {bs_point['snap_dist_m'].mean():.1f}m  "
           f"最大 {bs_point['snap_dist_m'].max():.1f}m  "
           f"中央値 {bs_point['snap_dist_m'].median():.1f}m")
 
-    # スナップ距離が大きい駅トップ20
-    print("\n【駅スナップ距離 上位20件】")
-    top = st_point[["station_name", "operator", "line_name", "snap_dist_m"]]\
-            .sort_values("snap_dist_m", ascending=False).head(20)
-    print(top.to_string(index=False))
+    if not args.filter:
+        print("\n【駅スナップ距離 上位20件】")
+        top = st_point[["station_name", "operator", "line_name", "snap_dist_m",
+                         "quadrant"]]\
+                .sort_values("snap_dist_m", ascending=False).head(20)
+        print(top.to_string(index=False))
 
     print("\n出力完了:")
     for f in ["stations_snap.parquet", "stations_snap_lines.parquet",
               "busstops_snap.parquet",  "busstops_snap_lines.parquet"]:
         p = OUT_DIR / f
-        print(f"  {p}  ({p.stat().st_size/1024:.0f} KB)")
+        if p.exists():
+            print(f"  {p}  ({p.stat().st_size/1024:.0f} KB)")
 
 
 if __name__ == "__main__":
