@@ -59,25 +59,16 @@ def load_stations_s12():
         if len(gdf) == 0:
             continue
 
-        # LineString → 両端点をポイント化（北口・南口等の複数出口に対応）
-        # ホーム線形の start/end がプラットホームの両端に対応するため、
-        # 重心1点より実際の出口位置を正確に捕捉できる。
+        # LineString → 重心1点をポイント化
         gdf = gdf.copy()
         orig_crs = gdf.crs
         proj = gdf.to_crs("EPSG:6677")
         rows = []
         for _, row in proj.iterrows():
             geom = row.geometry
-            if geom.geom_type == "LineString":
-                endpoints = [geom.coords[0], geom.coords[-1]]
-            elif geom.geom_type == "MultiLineString":
-                lines = list(geom.geoms)
-                endpoints = [lines[0].coords[0], lines[-1].coords[-1]]
-            else:
-                endpoints = [(geom.centroid.x, geom.centroid.y)]
+            cx, cy = geom.centroid.x, geom.centroid.y
             base = row.drop("geometry").to_dict()
-            for pt in endpoints:
-                rows.append({**base, "geometry": Point(pt)})
+            rows.append({**base, "geometry": Point(cx, cy)})
         gdf = gpd.GeoDataFrame(rows, crs="EPSG:6677").to_crs(orig_crs)
 
         # 乗降客数フィルタリング
