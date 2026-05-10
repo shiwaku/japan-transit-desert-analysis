@@ -78,8 +78,8 @@
     .legend-item { display: flex; align-items: center; gap: 8px; margin: 5px 0; font-size: 0.82rem; color: #333; }
     .legend-dot { width: 14px; height: 14px; border-radius: 2px; flex-shrink: 0; }
 
-    /* ── 凡例トグルボタン（スマホのみ表示） ── */
-    #legend-toggle {
+    /* ── 凡例・集計トグルボタン（スマホのみ表示） ── */
+    #legend-toggle, #stats-toggle {
       display: none;
     }
 
@@ -94,6 +94,11 @@
     }
     #stats-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
     #stats h3 { font-size: 0.72rem; color: #888; }
+    #stats-close {
+      display: none;
+      background: none; border: none; cursor: pointer;
+      font-size: 0.9rem; color: #999; padding: 0 0 0 8px; line-height: 1;
+    }
     #assumptions-toggle {
       background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.2); border-radius: 4px;
       padding: 2px 7px; font-size: 0.68rem; cursor: pointer;
@@ -180,7 +185,32 @@
         line-height: 1.4;
       }
 
-      #stats { display: none; }
+      /* 統計: デフォルト非表示、open クラスで表示 */
+      #stats {
+        display: none;
+        top: max(54px, calc(env(safe-area-inset-top) + 44px));
+        left: 14px; right: auto; bottom: auto;
+        text-align: left;
+        max-height: calc(100dvh - 160px);
+        overflow-y: auto;
+      }
+      #stats.open { display: block; }
+      #stats-close { display: block; }
+
+      /* 集計トグルボタン：凡例ボタンの下に配置 */
+      #stats-toggle {
+        display: flex; align-items: center; gap: 6px;
+        position: absolute;
+        top: max(52px, calc(env(safe-area-inset-top) + 42px));
+        right: 14px; z-index: 20;
+        background: rgba(255,255,252,0.94);
+        border: 1px solid rgba(0,0,0,0.1);
+        border-radius: 8px; padding: 6px 12px;
+        font-size: 0.82rem; font-weight: 600; color: #333;
+        cursor: pointer; backdrop-filter: blur(6px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        line-height: 1.4;
+      }
     }
 
     /* ── 横向き対応 ── */
@@ -229,15 +259,17 @@
   <div style="margin-top:8px;font-size:0.72rem;color:#999;line-height:1.4;">※ バス停は路線バスのみ。<br>デマンドバス・高速バスは含まない。</div>
 </div>
 <button id="legend-toggle">凡例</button>
+<button id="stats-toggle">集計</button>
 
 <div id="stats">
   <div id="stats-header">
     <h3>全国集計（令和2年国勢調査）</h3>
     <button id="assumptions-toggle">前提条件</button>
+    <button id="stats-close" aria-label="閉じる">✕</button>
   </div>
-  <div class="stat-row">便利地域 <span>5,695万人</span>（45.2%）</div>
-  <div class="stat-row">不便地域 <span>5,112万人</span>（40.6%）</div>
-  <div class="stat-row stat-desert">空白地域 <span>1,788万人</span>（14.2%）</div>
+  <div class="stat-row">便利地域 <span>5,389万人</span>（42.8%）</div>
+  <div class="stat-row">不便地域 <span>5,358万人</span>（42.5%）</div>
+  <div class="stat-row stat-desert">空白地域 <span>1,847万人</span>（14.7%）</div>
   <div id="assumptions">
     <dl>
       <dt>距離計算</dt>
@@ -460,6 +492,20 @@ legendToggle.addEventListener("click", () => {
 legendClose.addEventListener("click", () => {
   legendPanel.classList.remove("open");
   legendToggle.textContent = "凡例";
+});
+
+// ── 集計トグル（スマホ） ──
+const statsPanel  = document.getElementById("stats");
+const statsToggle = document.getElementById("stats-toggle");
+const statsClose  = document.getElementById("stats-close");
+
+statsToggle.addEventListener("click", () => {
+  const isOpen = statsPanel.classList.toggle("open");
+  statsToggle.textContent = isOpen ? "✕ 閉じる" : "集計";
+});
+statsClose.addEventListener("click", () => {
+  statsPanel.classList.remove("open");
+  statsToggle.textContent = "集計";
 });
 </script>
 </body>

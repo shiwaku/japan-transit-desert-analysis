@@ -4,7 +4,7 @@
 02_calc_transit_desert.py と同じ象限スナップ（NE/NW/SE/SW）を再現する。
 
 出力:
-  output/stations_snap.parquet        駅 + スナップ先ノード（1駅あたり最大4象限×2端点=8ノード）
+  output/stations_snap.parquet        駅 + スナップ先ノード（1駅あたり最大4象限=4ノード）
   output/busstops_snap.parquet        バス停 + スナップ先ノード
   output/stations_snap_lines.parquet  駅 → スナップ先ノードの接続線
   output/busstops_snap_lines.parquet  バス停 → スナップ先ノードの接続線
