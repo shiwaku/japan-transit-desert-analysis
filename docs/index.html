@@ -78,6 +78,20 @@
     .legend-item { display: flex; align-items: center; gap: 8px; margin: 5px 0; font-size: 0.82rem; color: #333; }
     .legend-dot { width: 14px; height: 14px; border-radius: 2px; flex-shrink: 0; }
 
+    /* ── 2D/3D トグルボタン ── */
+    #view-toggle {
+      position: absolute;
+      top: 14px; right: 308px; z-index: 20;
+      background: rgba(255,255,252,0.94);
+      border: 1px solid rgba(0,0,0,0.1);
+      border-radius: 10px; padding: 8px 14px;
+      font-size: 0.82rem; font-weight: 600; color: #333;
+      cursor: pointer; backdrop-filter: blur(8px);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+      white-space: nowrap;
+    }
+    #view-toggle:hover { background: rgba(240,240,235,0.97); }
+
     /* ── 凡例・集計トグルボタン（スマホのみ表示） ── */
     #legend-toggle, #stats-toggle {
       display: none;
@@ -204,6 +218,15 @@
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         line-height: 1.4;
       }
+
+      /* 2D/3Dトグル：集計ボタンの下に配置 */
+      #view-toggle {
+        top: max(92px, calc(env(safe-area-inset-top) + 82px));
+        right: 14px;
+        border-radius: 8px; padding: 6px 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        font-size: 0.82rem;
+      }
     }
 
     /* ── 横向き対応 ── */
@@ -253,6 +276,7 @@
 </div>
 <button id="legend-toggle">凡例</button>
 <button id="stats-toggle">集計</button>
+<button id="view-toggle">3D表示</button>
 
 <div id="stats">
   <div id="stats-header">
@@ -277,8 +301,10 @@
 </div>
 
 <script>
-// ── PMTiles URL ──
-const PMTILES_URL = "https://pmtiles-data.s3.ap-northeast-1.amazonaws.com/mlit/ksj/transit_desert.pmtiles";
+// ── PMTiles URL（ローカル開発時は ../output/ を使用してCORSを回避） ──
+const PMTILES_URL = (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+  ? "../output/transit_desert.pmtiles"
+  : "https://pmtiles-data.s3.ap-northeast-1.amazonaws.com/mlit/ksj/transit_desert.pmtiles";
 
 // ── PMTiles プロトコル登録 ──
 const protocol = new pmtiles.Protocol();
@@ -289,6 +315,8 @@ const map = new maplibregl.Map({
   style: "./pale.json",
   center: [136.5, 36.5],
   zoom: 5,
+  pitch: 0,
+  bearing: 0,
   maxZoom: 16,
   hash: true,
 });
@@ -315,17 +343,14 @@ map.on("load", () => {
 
   map.addLayer({
     id: "transit-fill",
-    type: "fill",
+    type: "fill-extrusion",
     source: "transit",
     "source-layer": "transit_desert",
     paint: {
-      "fill-color": catColor,
-      "fill-opacity": [
-        "interpolate", ["linear"], ["zoom"],
-        5, 0.85,
-        9, 0.75,
-        12, 0.6
-      ]
+      "fill-extrusion-color": catColor,
+      "fill-extrusion-opacity": OPACITY_2D,
+      "fill-extrusion-base": 0,
+      "fill-extrusion-height": 0
     }
   });
 
@@ -489,6 +514,22 @@ statsToggle.addEventListener("click", () => {
 statsClose.addEventListener("click", () => {
   statsPanel.classList.remove("open");
   statsToggle.textContent = "集計";
+});
+
+// ── 2D/3D トグル ──
+const OPACITY_2D = ["interpolate", ["linear"], ["zoom"], 5, 0.9, 10, 0.75, 14, 0.6];
+const OPACITY_3D = 0.85;
+let is3D = false;
+
+document.getElementById("view-toggle").addEventListener("click", () => {
+  is3D = !is3D;
+  map.easeTo({ pitch: is3D ? 45 : 0, bearing: is3D ? -10 : 0, duration: 600 });
+  map.setPaintProperty(
+    "transit-fill", "fill-extrusion-height",
+    is3D ? ["*", ["coalesce", ["get", "pop_total"], 0], 5] : 0
+  );
+  map.setPaintProperty("transit-fill", "fill-extrusion-opacity", is3D ? OPACITY_3D : OPACITY_2D);
+  document.getElementById("view-toggle").textContent = is3D ? "2D表示" : "3D表示";
 });
 </script>
 </body>
