@@ -149,8 +149,10 @@
       }
       #header h1 { font-size: 1rem; }
 
-      /* スマホはピンチズームで操作できるので非表示 */
-      .maplibregl-ctrl-top-left { display: none !important; }
+      /* スマホはピンチズームで操作できるのでズームコントロールのみ非表示 */
+      .maplibregl-ctrl-zoom-in,
+      .maplibregl-ctrl-zoom-out,
+      .maplibregl-ctrl-compass { display: none !important; }
 
       /* ホームインジケーター対応のボトムシート */
       #search-panel {
@@ -322,6 +324,11 @@ const map = new maplibregl.Map({
 });
 
 map.addControl(new maplibregl.NavigationControl(), "top-left");
+map.addControl(new maplibregl.GeolocateControl({
+  positionOptions: { enableHighAccuracy: true },
+  trackUserLocation: false,
+  showAccuracyCircle: false,
+}), "top-left");
 map.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: "metric" }), "bottom-left");
 
 map.on("load", () => {
@@ -518,7 +525,7 @@ statsClose.addEventListener("click", () => {
 
 // ── 2D/3D トグル ──
 const OPACITY_2D = ["interpolate", ["linear"], ["zoom"], 5, 0.9, 10, 0.75, 14, 0.6];
-const OPACITY_3D = 0.85;
+const OPACITY_3D = 0.75;
 let is3D = false;
 
 document.getElementById("view-toggle").addEventListener("click", () => {
