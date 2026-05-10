@@ -289,6 +289,8 @@ const map = new maplibregl.Map({
   style: "./pale.json",
   center: [136.5, 36.5],
   zoom: 5,
+  pitch: 45,
+  bearing: -10,
   maxZoom: 16,
   hash: true,
 });
@@ -315,16 +317,15 @@ map.on("load", () => {
 
   map.addLayer({
     id: "transit-fill",
-    type: "fill",
+    type: "fill-extrusion",
     source: "transit",
     "source-layer": "transit_desert",
     paint: {
-      "fill-color": catColor,
-      "fill-opacity": [
-        "interpolate", ["linear"], ["zoom"],
-        5, 0.85,
-        9, 0.75,
-        12, 0.6
+      "fill-extrusion-color": catColor,
+      "fill-extrusion-opacity": 0.85,
+      "fill-extrusion-base": 0,
+      "fill-extrusion-height": [
+        "*", ["coalesce", ["get", "pop_total"], 0], 10
       ]
     }
   });
