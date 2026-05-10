@@ -92,8 +92,8 @@
     }
     #view-toggle:hover { background: rgba(240,240,235,0.97); }
 
-    /* ── 凡例・集計トグルボタン（スマホのみ表示） ── */
-    #legend-toggle, #stats-toggle {
+    /* ── 凡例・集計・現在地トグルボタン（スマホのみ表示） ── */
+    #legend-toggle, #stats-toggle, #geolocate-toggle {
       display: none;
     }
 
@@ -149,10 +149,8 @@
       }
       #header h1 { font-size: 1rem; }
 
-      /* スマホはピンチズームで操作できるのでズームコントロールのみ非表示 */
-      .maplibregl-ctrl-zoom-in,
-      .maplibregl-ctrl-zoom-out,
-      .maplibregl-ctrl-compass { display: none !important; }
+      /* スマホはピンチズームで操作できるのでMapLibreコントロールをすべて非表示 */
+      .maplibregl-ctrl-top-left { display: none !important; }
 
       /* ホームインジケーター対応のボトムシート */
       #search-panel {
@@ -229,6 +227,21 @@
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         font-size: 0.82rem;
       }
+
+      /* 現在地トグル：3D表示ボタンの下に配置 */
+      #geolocate-toggle {
+        display: flex; align-items: center; justify-content: center;
+        position: absolute;
+        top: max(132px, calc(env(safe-area-inset-top) + 122px));
+        right: 14px; z-index: 20;
+        background: rgba(255,255,252,0.94);
+        border: 1px solid rgba(0,0,0,0.1);
+        border-radius: 8px; padding: 6px 12px;
+        font-size: 1rem;
+        cursor: pointer; backdrop-filter: blur(6px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        line-height: 1.4;
+      }
     }
 
     /* ── 横向き対応 ── */
@@ -279,6 +292,7 @@
 <button id="legend-toggle">凡例</button>
 <button id="stats-toggle">集計</button>
 <button id="view-toggle">3D表示</button>
+<button id="geolocate-toggle">📍</button>
 
 <div id="stats">
   <div id="stats-header">
@@ -324,11 +338,12 @@ const map = new maplibregl.Map({
 });
 
 map.addControl(new maplibregl.NavigationControl(), "top-left");
-map.addControl(new maplibregl.GeolocateControl({
+const geolocate = new maplibregl.GeolocateControl({
   positionOptions: { enableHighAccuracy: true },
   trackUserLocation: false,
   showAccuracyCircle: false,
-}), "top-left");
+});
+map.addControl(geolocate, "top-left");
 map.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: "metric" }), "bottom-left");
 
 map.on("load", () => {
@@ -537,6 +552,11 @@ document.getElementById("view-toggle").addEventListener("click", () => {
   );
   map.setPaintProperty("transit-fill", "fill-extrusion-opacity", is3D ? OPACITY_3D : OPACITY_2D);
   document.getElementById("view-toggle").textContent = is3D ? "2D表示" : "3D表示";
+});
+
+// ── 現在地トグル（スマホ用） ──
+document.getElementById("geolocate-toggle").addEventListener("click", () => {
+  geolocate.trigger();
 });
 </script>
 </body>
