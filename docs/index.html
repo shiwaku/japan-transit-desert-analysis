@@ -99,18 +99,11 @@
       background: none; border: none; cursor: pointer;
       font-size: 0.9rem; color: #999; padding: 0 0 0 8px; line-height: 1;
     }
-    #assumptions-toggle {
-      background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.2); border-radius: 4px;
-      padding: 2px 7px; font-size: 0.68rem; cursor: pointer;
-      color: #555; flex-shrink: 0; margin-left: 8px; white-space: nowrap;
-    }
-    #assumptions-toggle:hover { background: rgba(0,0,0,0.1); color: #222; }
-    #assumptions-toggle.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
     .stat-row  { font-size: 0.78rem; color: #333; margin: 3px 0; }
     .stat-row span { font-weight: 700; }
     .stat-desert { color: #c0392b; }
     #assumptions {
-      display: none; margin-top: 10px; padding-top: 10px;
+      margin-top: 10px; padding-top: 10px;
       border-top: 1px solid rgba(0,0,0,0.08);
       text-align: left;
     }
@@ -264,7 +257,6 @@
 <div id="stats">
   <div id="stats-header">
     <h3>全国集計（令和2年国勢調査）</h3>
-    <button id="assumptions-toggle">前提条件</button>
     <button id="stats-close" aria-label="閉じる">✕</button>
   </div>
   <div class="stat-row">便利地域 <span>5,389万人</span>（42.8%）</div>
@@ -469,15 +461,6 @@ function showResult(info, detail) {
 document.getElementById("search-btn").addEventListener("click", searchAddress);
 document.getElementById("address-input").addEventListener("keydown", (e) => {
   if (e.key === "Enter") searchAddress();
-});
-
-// ── 前提条件トグル ──
-document.getElementById("assumptions-toggle").addEventListener("click", () => {
-  const panel = document.getElementById("assumptions");
-  const btn   = document.getElementById("assumptions-toggle");
-  const isOpen = panel.style.display === "block";
-  panel.style.display = isOpen ? "none" : "block";
-  btn.classList.toggle("active", !isOpen);
 });
 
 // ── 凡例トグル（スマホ） ──
