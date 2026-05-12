@@ -72,7 +72,7 @@ STATION_MIN = 1000m / 60m/分 = 16.67分
                      ↓
           02_calc_transit_desert.py
                 ↑           ↑
-   [全国walk道路リンク]  [L5アクセスリンク]
+   [全国walk道路リンク]  [250mメッシュアクセスリンク]
    道路リンク: 24,045,959件  594万件
    道路ノード: 18,614,424件
                      ↓
@@ -160,7 +160,7 @@ S12_PASSENGER_COL      = "S12_061"  # 2024年
    - バス停（242,985件）全体を1回で処理 → 全ノードへの最短時間
 4. **メッシュ距離変換** — アクセスリンクの `road_node + acc_time` でメッシュ単位の時間を算出
 5. **閾値判定** → `category` 列生成
-6. **L5ポリゴン生成** — `mesh_code` から SW 座標を復元して `shapely.geometry.box` でポリゴン化
+6. **250mメッシュポリゴン生成** — `mesh_code` から SW 座標を復元して `shapely.geometry.box` でポリゴン化
 
 **Multi-source Dijkstra 実装**:
 
@@ -240,13 +240,13 @@ https://pmtiles-data.s3.ap-northeast-1.amazonaws.com/mlit/ksj/transit_desert.pmt
 
 | カラム | 型 | 内容 |
 |---|---|---|
-| `mesh_code` | str | L5メッシュコード（10桁） |
+| `mesh_code` | str | 250mメッシュコード（10桁・第5次地域区画） |
 | `dist_bus_min` | float | 最寄りバス停までの道路徒歩時間（分）|
 | `dist_station_min` | float | 最寄り鉄道駅までの道路徒歩時間（分）|
 | `far_bus` | bool | バス停 > 8.3分（500m超）|
 | `far_station` | bool | 鉄道駅 > 16.7分（1,000m超）|
 | `category` | str | 判定カテゴリ（3種）|
-| `geometry` | Polygon | L5メッシュポリゴン（EPSG:4326）|
+| `geometry` | Polygon | 250mメッシュポリゴン（EPSG:4326）|
 
 ### transit_desert_with_pop.parquet（人口あり・1,155,496行・45MB）
 

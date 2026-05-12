@@ -179,7 +179,7 @@ S12ホーム線形の重心1点をポイントとして使用。
 | 移動速度 | walk 3.6 km/h |
 | 道路リンク数 | 24,045,959件 |
 | 道路ノード数 | 18,614,424件 |
-| L5アクセスリンク数 | 5,935,127件 |
+| L5（250m）アクセスリンク数 | 5,935,127件 |
 
 全道路対象が必要な理由: 徒歩圏500m/1,000m判定には生活道路・細街路を含む全リンクが必要。フィルター済みネットワークでは歩道・路地が欠落し、空白地域が過大評価される。
 
@@ -238,9 +238,9 @@ https://pmtiles-data.s3.ap-northeast-1.amazonaws.com/mlit/ksj/transit_desert.pmt
 
 ## 注意事項
 
-- `make_access_links.py` の `--nationwide` は従来 L3 専用だったが、L5 対応に修正済み
+- `make_access_links.py` の `--nationwide` は従来 L3 専用だったが、L5（250m）対応に修正済み
   （line 137-139 の level強制上書きを削除）
-- L5 アクセスリンクは約594万件で処理に約8分かかる
+- L5（250m）アクセスリンクは約594万件で処理に約8分かかる
 - `02_calc_transit_desert.py` の Dijkstra 処理は全国で約6分（駅140秒 + バス停18秒）
 - 250mメッシュ人口データは `*`（秘匿値）を含む列がある → `03_aggregate.py` で 0 扱い
 - `transit_desert_with_pop.parquet` は `pop_total > 0` のみ（1,155,496件・45MB）。全5.9Mメッシュは `transit_desert.parquet`
