@@ -49,14 +49,14 @@ STATION_MIN = 1000m / 60m/分 = 16.67分
 
 ## 3. 分析結果（令和2年国勢調査）
 
-実行日: 2026年5月（駅スナップ: NE/NW/SE/SW 4象限・最大500m・スナップ駅ノード数 66,269）
+実行日: 2026年5月（駅スナップ: 重心1点 → NE/NW/SE/SW 4象限・最大500m・スナップ駅ノード数 66,269）
 
 | カテゴリ | 人口 | 割合 | 65歳以上人口 |
 |---|---|---|---|
-| 公共交通便利地域 | 5,695万人 | 45.2% | 1,432万人 |
-| 公共交通不便地域 | 5,112万人 | 40.6% | 1,518万人 |
-| **公共交通空白地域** | **1,788万人** | **14.2%** | **576万人** |
-| 合計 | 1億2,595万人 | 100% | 3,526万人 |
+| 公共交通便利地域 | 5,389万人 | 42.8% | 1,432万人 |
+| 公共交通不便地域 | 5,358万人 | 42.5% | 1,518万人 |
+| **公共交通空白地域** | **1,847万人** | **14.7%** | **592万人** |
+| 合計 | 1億2,594万人 | 100% | 3,542万人 |
 
 ※ 人口集計は pop_total > 0 の 1,155,496 メッシュのみ対象（無人エリア除外）。
 
@@ -72,7 +72,7 @@ STATION_MIN = 1000m / 60m/分 = 16.67分
                      ↓
           02_calc_transit_desert.py
                 ↑           ↑
-   [全国walk道路リンク]  [L5アクセスリンク]
+   [全国walk道路リンク]  [250mメッシュアクセスリンク]
    道路リンク: 24,045,959件  594万件
    道路ノード: 18,614,424件
                      ↓
@@ -160,7 +160,7 @@ S12_PASSENGER_COL      = "S12_061"  # 2024年
    - バス停（242,985件）全体を1回で処理 → 全ノードへの最短時間
 4. **メッシュ距離変換** — アクセスリンクの `road_node + acc_time` でメッシュ単位の時間を算出
 5. **閾値判定** → `category` 列生成
-6. **L5ポリゴン生成** — `mesh_code` から SW 座標を復元して `shapely.geometry.box` でポリゴン化
+6. **250mメッシュポリゴン生成** — `mesh_code` から SW 座標を復元して `shapely.geometry.box` でポリゴン化
 
 **Multi-source Dijkstra 実装**:
 
@@ -240,13 +240,13 @@ https://pmtiles-data.s3.ap-northeast-1.amazonaws.com/mlit/ksj/transit_desert.pmt
 
 | カラム | 型 | 内容 |
 |---|---|---|
-| `mesh_code` | str | L5メッシュコード（10桁） |
+| `mesh_code` | str | 250mメッシュコード（10桁・第5次地域区画） |
 | `dist_bus_min` | float | 最寄りバス停までの道路徒歩時間（分）|
 | `dist_station_min` | float | 最寄り鉄道駅までの道路徒歩時間（分）|
 | `far_bus` | bool | バス停 > 8.3分（500m超）|
 | `far_station` | bool | 鉄道駅 > 16.7分（1,000m超）|
 | `category` | str | 判定カテゴリ（3種）|
-| `geometry` | Polygon | L5メッシュポリゴン（EPSG:4326）|
+| `geometry` | Polygon | 250mメッシュポリゴン（EPSG:4326）|
 
 ### transit_desert_with_pop.parquet（人口あり・1,155,496行・45MB）
 
@@ -303,3 +303,9 @@ python3 make_access_links.py --nationwide --level 5 --case nationwide_walk
 - [「交通空白」解消に関する取組](https://www.mlit.go.jp/sogoseisaku/transport/sosei_transport_tk_000237.html) — 国交省の政策文脈
 - [地域公共交通づくりハンドブック](https://www.mlit.go.jp/common/000036945.pdf) — 都市部・地方部別の閾値設定
 - [gtfs-gis.jp 鉄道運行本数データ](https://gtfs-gis.jp/railway_honsu/) — 運行本数付き駅データ（令和4年度版）
+
+## 11. 測量成果使用承認
+
+数値地図（国土基本情報）電子国土基本図（地図情報）使用
+
+測量法に基づく国土地理院長承認（使用）R 8JHs 85
