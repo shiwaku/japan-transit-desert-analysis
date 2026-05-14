@@ -177,15 +177,24 @@
       .legend-item { font-size: 0.78rem; margin: 4px 0; }
       .legend-dot  { width: 11px; height: 11px; }
 
+      /* 右上ボタン共通：幅を固定して揃える */
+      #legend-toggle, #stats-toggle, #view-toggle, #geolocate-toggle {
+        width: 52px;
+        justify-content: center;
+        text-align: center;
+        padding: 6px 0;
+        box-sizing: border-box;
+      }
+
       /* 凡例トグルボタン：ヘッダー右端に配置 */
       #legend-toggle {
-        display: flex; align-items: center; gap: 6px;
+        display: flex; align-items: center;
         position: absolute;
         top: max(12px, env(safe-area-inset-top));
         right: 14px; z-index: 20;
         background: rgba(255,255,252,0.94);
         border: 1px solid rgba(0,0,0,0.1);
-        border-radius: 8px; padding: 6px 12px;
+        border-radius: 8px;
         font-size: 0.82rem; font-weight: 600; color: #333;
         cursor: pointer; backdrop-filter: blur(6px);
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -206,13 +215,13 @@
 
       /* 集計トグルボタン：凡例ボタンの下に配置 */
       #stats-toggle {
-        display: flex; align-items: center; gap: 6px;
+        display: flex; align-items: center;
         position: absolute;
         top: max(52px, calc(env(safe-area-inset-top) + 42px));
         right: 14px; z-index: 20;
         background: rgba(255,255,252,0.94);
         border: 1px solid rgba(0,0,0,0.1);
-        border-radius: 8px; padding: 6px 12px;
+        border-radius: 8px;
         font-size: 0.82rem; font-weight: 600; color: #333;
         cursor: pointer; backdrop-filter: blur(6px);
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -223,20 +232,20 @@
       #view-toggle {
         top: max(92px, calc(env(safe-area-inset-top) + 82px));
         right: 14px;
-        border-radius: 8px; padding: 6px 12px;
+        border-radius: 8px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         font-size: 0.82rem;
       }
 
       /* 現在地トグル：3D表示ボタンの下に配置 */
       #geolocate-toggle {
-        display: flex; align-items: center; justify-content: center;
+        display: flex; align-items: center;
         position: absolute;
         top: max(132px, calc(env(safe-area-inset-top) + 122px));
         right: 14px; z-index: 20;
         background: rgba(255,255,252,0.94);
         border: 1px solid rgba(0,0,0,0.1);
-        border-radius: 8px; padding: 6px 12px;
+        border-radius: 8px;
         font-size: 1rem;
         cursor: pointer; backdrop-filter: blur(6px);
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -466,10 +475,10 @@ async function searchAddress() {
       .setLngLat(lngLat)
       .addTo(map);
 
-    map.flyTo({ center: lngLat, zoom: 13, duration: 1200 });
+    map.flyTo({ center: lngLat, zoom: 13, duration: 800 });
 
     // ポイントのフィーチャを取得（flyTo完了後）
-    setTimeout(() => {
+    map.once("moveend", () => {
       const pt = map.project(lngLat);
       const features = map.queryRenderedFeatures(pt, { layers: ["transit-fill"] });
       if (features.length) {
@@ -487,7 +496,7 @@ async function searchAddress() {
       } else {
         showResult(null, `<b>${display_name.split(",")[0]}</b> 周辺にデータがありません（海上・国外の可能性）`);
       }
-    }, 1400);
+    });
   } catch (e) {
     showResult(null, "検索エラーが発生しました");
   } finally {
