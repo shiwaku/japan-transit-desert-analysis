@@ -107,13 +107,13 @@
       box-shadow: 0 2px 12px rgba(0,0,0,0.1);
     }
     #stats-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-    #stats h3 { font-size: 0.72rem; color: #888; }
+    #stats h3 { font-size: 0.78rem; color: #888; }
     #stats-close {
       display: none;
       background: none; border: none; cursor: pointer;
       font-size: 0.9rem; color: #999; padding: 0 0 0 8px; line-height: 1;
     }
-    .stat-row  { font-size: 0.78rem; color: #333; margin: 3px 0; }
+    .stat-row  { font-size: 0.84rem; color: #333; margin: 3px 0; }
     .stat-row span { font-weight: 700; }
     .stat-desert { color: #c0392b; }
     #assumptions {
@@ -121,7 +121,7 @@
       border-top: 1px solid rgba(0,0,0,0.08);
       text-align: left;
     }
-    #assumptions dl { font-size: 0.72rem; line-height: 1.5; }
+    #assumptions dl { font-size: 0.78rem; line-height: 1.5; }
     #assumptions dt { font-weight: 600; color: #555; margin-top: 6px; }
     #assumptions dt:first-child { margin-top: 0; }
     #assumptions dd { color: #777; margin: 0 0 0 0; }
@@ -172,7 +172,7 @@
         top: max(54px, calc(env(safe-area-inset-top) + 44px));
         right: 14px; left: auto; bottom: auto; padding: 10px 14px;
       }
-      #legend.open { display: block; }
+      #legend.open { display: block; z-index: 30; }
       #legend-close { display: block; }
       .legend-item { font-size: 0.78rem; margin: 4px 0; }
       .legend-dot  { width: 11px; height: 11px; }
@@ -291,7 +291,7 @@
 </div>
 <button id="legend-toggle">凡例</button>
 <button id="stats-toggle">集計</button>
-<button id="view-toggle">3D表示</button>
+<button id="view-toggle">3D</button>
 <button id="geolocate-toggle">📍</button>
 
 <div id="stats">
@@ -551,7 +551,7 @@ document.getElementById("view-toggle").addEventListener("click", () => {
     is3D ? ["*", ["coalesce", ["get", "pop_total"], 0], 5] : 0
   );
   map.setPaintProperty("transit-fill", "fill-extrusion-opacity", is3D ? OPACITY_3D : OPACITY_2D);
-  document.getElementById("view-toggle").textContent = is3D ? "2D表示" : "3D表示";
+  document.getElementById("view-toggle").textContent = is3D ? "2D" : "3D";
 });
 
 // ── 現在地トグル（スマホ用） ──
