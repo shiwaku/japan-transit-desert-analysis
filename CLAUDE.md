@@ -215,7 +215,7 @@ Multi-source Dijkstra（scipy.sparse.csgraph.dijkstra）を使用した道路ネ
 
 **PMTiles S3配置先**:
 ```
-https://pmtiles-data.s3.ap-northeast-1.amazonaws.com/mlit/ksj/transit_desert_250m.pmtiles
+https://shiworks2.xsrv.jp/pmtiles/mlit-ksj/transit_desert_250m.pmtiles
 ```
 
 **ビューワー**: `docs/index.html`
