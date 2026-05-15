@@ -79,7 +79,7 @@ URL: https://www.mlit.go.jp/sogoseisaku/transport/sosei_transport_tk_000237.html
     ├── transit_desert.qml              # QGISスタイル（全件用・3色）
     ├── transit_desert_with_pop.parquet # 人口ありメッシュのみ（1,155,496件・45MB・QGIS推奨）
     ├── transit_desert_with_pop.qml     # QGISスタイル（人口あり用・categorized）
-    ├── transit_desert.pmtiles          # ウェブ公開用PMTiles（204MB・S3配置済み）
+    ├── transit_desert_250m.pmtiles          # ウェブ公開用PMTiles（204MB・S3配置済み）
     ├── make_pmtiles.sh                 # tippecanoe実行スクリプト
     ├── summary_national.csv            # 全国集計
     ├── summary_pref.csv                # 1次メッシュ別集計
@@ -215,7 +215,7 @@ Multi-source Dijkstra（scipy.sparse.csgraph.dijkstra）を使用した道路ネ
 
 **PMTiles S3配置先**:
 ```
-https://pmtiles-data.s3.ap-northeast-1.amazonaws.com/mlit/ksj/transit_desert.pmtiles
+https://pmtiles-data.s3.ap-northeast-1.amazonaws.com/mlit/ksj/transit_desert_250m.pmtiles
 ```
 
 **ビューワー**: `docs/index.html`
@@ -230,7 +230,7 @@ https://pmtiles-data.s3.ap-northeast-1.amazonaws.com/mlit/ksj/transit_desert.pmt
 |---|---|---|---|
 | `transit_desert_with_pop.parquet` + `.qml` | **推奨**（45MB・名称付き） | — | — |
 | `transit_desert.parquet` + `.qml` | 全件（184MB） | — | — |
-| `transit_desert.pmtiles` | — | S3配置済み | — |
+| `transit_desert_250m.pmtiles` | — | S3配置済み | — |
 | `summary_national.csv` | — | — | ✓ |
 | `pref_ranking.png` / `urban_rural_compare.png` | — | — | ✓ |
 

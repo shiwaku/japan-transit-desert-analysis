@@ -7,5 +7,5 @@ tippecanoe \
   --coalesce-densest-as-needed \
   --force \
   -P \
-  -o /mnt/c/Users/yshiw/Documents/GIS/ksj/ksj-roadcenterline-route-search/09_transit-desert-analysis/output/transit_desert.pmtiles \
-  /mnt/c/Users/yshiw/Documents/GIS/ksj/ksj-roadcenterline-route-search/09_transit-desert-analysis/output/transit_desert_web.geojson
+  -o /mnt/c/Users/yshiw/Documents/GIS/ksj/ksj-roadcenterline-route-search/09_transit-desert-analysis-250/output/transit_desert_250m.pmtiles \
+  /mnt/c/Users/yshiw/Documents/GIS/ksj/ksj-roadcenterline-route-search/09_transit-desert-analysis-250/output/transit_desert_web_250m.geojson
