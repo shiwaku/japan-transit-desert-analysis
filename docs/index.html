@@ -109,9 +109,21 @@
     #stats-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
     #stats h3 { font-size: 0.78rem; color: #888; }
     #stats-close {
-      display: none;
+      display: block;
       background: none; border: none; cursor: pointer;
       font-size: 0.9rem; color: #999; padding: 0 0 0 8px; line-height: 1;
+    }
+    /* デスクトップ用：集計パネルを閉じた後に再表示するボタン */
+    #stats-toggle.desktop-visible {
+      display: flex; align-items: center;
+      position: absolute;
+      bottom: 46px; right: 14px; z-index: 20;
+      background: rgba(255,255,252,0.94);
+      border: 1px solid rgba(0,0,0,0.1);
+      border-radius: 10px; padding: 8px 14px;
+      font-size: 0.82rem; font-weight: 600; color: #333;
+      cursor: pointer; backdrop-filter: blur(8px);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.12);
     }
     .stat-row  { font-size: 0.84rem; color: #333; margin: 3px 0; }
     .stat-row span { font-weight: 700; }
@@ -539,12 +551,22 @@ const statsToggle = document.getElementById("stats-toggle");
 const statsClose  = document.getElementById("stats-close");
 
 statsToggle.addEventListener("click", () => {
-  const isOpen = statsPanel.classList.toggle("open");
-  statsToggle.textContent = isOpen ? "✕ 閉じる" : "集計";
+  if (window.innerWidth > 600) {
+    statsPanel.style.display = "";
+    statsToggle.classList.remove("desktop-visible");
+  } else {
+    const isOpen = statsPanel.classList.toggle("open");
+    statsToggle.textContent = isOpen ? "✕ 閉じる" : "集計";
+  }
 });
 statsClose.addEventListener("click", () => {
-  statsPanel.classList.remove("open");
-  statsToggle.textContent = "集計";
+  if (window.innerWidth > 600) {
+    statsPanel.style.display = "none";
+    statsToggle.classList.add("desktop-visible");
+  } else {
+    statsPanel.classList.remove("open");
+    statsToggle.textContent = "集計";
+  }
 });
 
 // ── 2D/3D トグル ──
