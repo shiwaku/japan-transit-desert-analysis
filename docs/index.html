@@ -489,25 +489,27 @@ async function searchAddress() {
 
     map.flyTo({ center: lngLat, zoom: 13, duration: 800 });
 
-    // ポイントのフィーチャを取得（flyTo完了後）
+    // ポイントのフィーチャを取得（flyTo完了 → タイル描画完了後）
     map.once("moveend", () => {
-      const pt = map.project(lngLat);
-      const features = map.queryRenderedFeatures(pt, { layers: ["transit-fill"] });
-      if (features.length) {
-        const cat = features[0].properties.category;
-        const info = CAT_INFO[cat];
-        const busMin = features[0].properties.dist_bus_min;
-        const stMin  = features[0].properties.dist_station_min;
-        const detail = `${info.desc}<br>鉄道駅まで ${stMin >= 0 ? stMin.toFixed(1)+"分" : "—"}、バス停まで ${busMin >= 0 ? busMin.toFixed(1)+"分" : "—"}`;
-        showResult(info, detail);
-        // カテゴリ色に合わせてマーカーを更新
-        searchMarker.remove();
-        searchMarker = new maplibregl.Marker({ color: info.color })
-          .setLngLat(lngLat)
-          .addTo(map);
-      } else {
-        showResult(null, `<b>${display_name.split(",")[0]}</b> 周辺にデータがありません（海上・国外の可能性）`);
-      }
+      map.once("idle", () => {
+        const pt = map.project(lngLat);
+        const features = map.queryRenderedFeatures(pt, { layers: ["transit-fill"] });
+        if (features.length) {
+          const cat = features[0].properties.category;
+          const info = CAT_INFO[cat];
+          const busMin = features[0].properties.dist_bus_min;
+          const stMin  = features[0].properties.dist_station_min;
+          const detail = `${info.desc}<br>鉄道駅まで ${stMin >= 0 ? stMin.toFixed(1)+"分" : "—"}、バス停まで ${busMin >= 0 ? busMin.toFixed(1)+"分" : "—"}`;
+          showResult(info, detail);
+          // カテゴリ色に合わせてマーカーを更新
+          searchMarker.remove();
+          searchMarker = new maplibregl.Marker({ color: info.color })
+            .setLngLat(lngLat)
+            .addTo(map);
+        } else {
+          showResult(null, `<b>${display_name.split(",")[0]}</b> 周辺にデータがありません（海上・国外の可能性）`);
+        }
+      }); // idle
     });
   } catch (e) {
     showResult(null, "検索エラーが発生しました");
