@@ -6,8 +6,8 @@ transit_desert_with_pop.parquet → GeoJSON 変換（tippecanoe 用）
 出力後 tippecanoe で PMTiles に変換する。
 
 出力:
-  output/transit_desert_web.geojson  (tippecanoe 入力用)
-  output/transit_desert.pmtiles      (tippecanoe 実行後)
+  output/transit_desert_web_250m.geojson  (tippecanoe 入力用)
+  output/transit_desert_250m.pmtiles      (tippecanoe 実行後)
 """
 
 from pathlib import Path
@@ -42,14 +42,14 @@ def main():
     gdf_out["dist_bus_min"]     = gdf_out["dist_bus_min"].round(1).fillna(-1)
     gdf_out["dist_station_min"] = gdf_out["dist_station_min"].round(1).fillna(-1)
 
-    out_path = OUT_DIR / "transit_desert_web.geojson"
+    out_path = OUT_DIR / "transit_desert_web_250m.geojson"
     print(f"GeoJSON 出力中 → {out_path.name} ...")
     gdf_out.to_file(out_path, driver="GeoJSON")
     size_mb = out_path.stat().st_size / 1024 / 1024
     print(f"  完了: {size_mb:.0f} MB")
 
     print("\n次のコマンドで PMTiles に変換してください:")
-    pmtiles_path = OUT_DIR / "transit_desert.pmtiles"
+    pmtiles_path = OUT_DIR / "transit_desert_250m.pmtiles"
     cmd = (
         f"tippecanoe \\\n"
         f"  -Z 4 -z 13 \\\n"
